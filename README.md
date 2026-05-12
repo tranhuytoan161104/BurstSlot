@@ -15,17 +15,21 @@ The project is structured as a Minimum Viable Product (MVP) to focus entirely on
 - **Message Broker:** Apache Kafka 3.7
 
 ```mermaid
-flowchart LR
-    Client(["Client / k6"]) -->|POST /api/v1/reservations| API["Spring Boot API"]
+flowchart TD
+    Client(["Client / k6"])
 
-    subgraph Docker Compose
-        API -->|1. DECR atomic| Redis["Redis"]
-        API -->|2. UPDATE slot| PG[("PostgreSQL")]
-        API -->|3. INSERT outbox| PG
-        Relay["OutboxRelayService"] -->|4. Poll PENDING| PG
-        Relay -->|5. Publish| Kafka["Kafka"]
-        Worker["NotificationWorker"] -->|6. Consume| Kafka
+    subgraph infra ["Docker Compose"]
+        API["Spring Boot API"]
+        Redis[("Redis")]
+        PG[("PostgreSQL")]
+        Kafka["Kafka"]
     end
+
+    Client -- "HTTP" --> API
+    API -- "TCP" --> Redis
+    API -- "JDBC" --> PG
+    API -- "Pub/Sub" --> Kafka
+    Kafka -- "Pub/Sub" --> API
 ```
 
 ### 3. Bootstrap & Setup
