@@ -1,27 +1,55 @@
-# BurstSlot - High-Concurrency Flash Sale Backend
+# BurstSlot - High-Concurrency Slot Reservation System
 
-### 1. Định nghĩa Đề tài
+### 1. Project Definition
 
-**BurstSlot** là một hệ thống backend được thiết kế chuyên biệt để giải quyết bài toán "Tranh slot" - kịch bản lượng truy cập khổng lồ nhắm vào một lượng tài nguyên cực kỳ giới hạn trong thời gian ngắn (tính bằng mili-giây).
-Mục tiêu: **Không bán vượt mức** và **Giữ hệ thống ổn định dưới tải cao**.
+**BurstSlot** is a specialized backend system designed to solve high-concurrency resource allocation problem — scenarios where massive traffic spikes target extremely limited slots/resources within milliseconds.
+Key goals are **Zero Overselling** and **High System Stability Under Peak Traffic Load**.
 
-### 2. Bối cảnh Môi trường Vận hành
+### 2. Architecture
 
-Dự án được thu gọn tối đa dưới dạng MVP để tập trung demo hoàn toàn vào kiến trúc xử lý tương tranh, chạy độc lập trên **Docker Compose** với các thành phần:
+The project is structured as a Minimum Viable Product (MVP) to focus entirely on concurrent state management. It runs in a self-contained environment using **Docker Compose** with the following technology stack:
 
-- **API Server:** Spring Boot 3.
-- **Database:** PostgreSQL 16.
-- **RAM Cache:** Redis 7 .
-- **Message Broker:** Apache Kafka 3.7.
+- **API Server:** Spring Boot 3
+- **Database:** PostgreSQL 16
+- **Distributed Cache:** Redis 7
+- **Message Broker:** Apache Kafka 3.7
 
-### 3. Phương pháp Kiểm thử Hiệu năng
+```mermaid
+flowchart LR
+    Client(["Client / k6"]) -->|POST /api/v1/reservations| API["Spring Boot API"]
 
-#### 3.1. Kịch bản Kiểm thử k6
+    subgraph Docker Compose
+        API -->|1. DECR atomic| Redis["Redis"]
+        API -->|2. UPDATE slot| PG[("PostgreSQL")]
+        API -->|3. INSERT outbox| PG
+        Relay["OutboxRelayService"] -->|4. Poll PENDING| PG
+        Relay -->|5. Publish| Kafka["Kafka"]
+        Worker["NotificationWorker"] -->|6. Consume| Kafka
+    end
+```
 
-- **Định nghĩa:** Kịch bản k6 được viết bằng JavaScript, định nghĩa chính xác hành vi của các VUs, bao gồm cấu hình tải, tiêu đề HTTP (Headers), và Payload.
-- **Chiến lược:** Cung cấp một kịch bản hoàn chỉnh, trong đó mỗi yêu cầu HTTP được tự động gắn một mã UUID để làm **Idempotency Key**, mô phỏng chính xác các giao dịch độc lập.
+### 3. Bootstrap & Setup
 
-**Thực hành: Tạo tệp `loadtest.js` trong thư mục dự án:**
+Start the infrastructure stack and application service:
+
+```bash
+docker compose up -d --build
+```
+
+Stop the services and clear database volumes (reset state):
+
+```bash
+docker compose down -v
+```
+
+### 4. Load Testing & Performance Verification
+
+#### 4.1. k6 Load Testing Script
+
+- **Definition:** The k6 load testing script is written in JavaScript, defining Virtual User (VU) behavior, load duration, headers, and payloads.
+- **Strategy:** Each HTTP request is dynamically assigned a unique UUID in the HTTP headers as an `Idempotency-Key` to safely prevent duplicate orders and simulate unique transactional entries.
+
+**Create the `loadtest.js` file in the root directory:**
 
 ```javascript
 import http from "k6/http";
@@ -30,7 +58,7 @@ import { uuidv4 } from "https://jslib.k6.io/k6-utils/1.4.0/index.js";
 
 export const options = {
   scenarios: {
-    flash_sale_spike: {
+    slot_grabbing_spike: {
       executor: "shared-iterations",
       vus: 1000,
       iterations: 100000,
@@ -38,6 +66,7 @@ export const options = {
     },
   },
 };
+
 export default function () {
   const url = "http://localhost:8080/api/v1/reservations";
 
@@ -63,9 +92,7 @@ export default function () {
 }
 ```
 
-**Thực hành: Khởi chạy kiểm thử:**
-
-Cài k6 trên Ubuntu:
+**Install k6 (on Ubuntu/Debian):**
 
 ```bash
 sudo gpg -k
@@ -75,25 +102,60 @@ sudo apt-get update
 sudo apt-get install k6 -y
 ```
 
-Kiểm thử:
+**Execute the load test:**
 
 ```bash
 k6 run loadtest.js
 ```
 
-#### 3.2. Kiểm tra Kết quả
+#### 4.2. Verify Results
 
-**Thực hành (SQL Query trên PostgreSQL):**
+Run a direct SQL command in the running PostgreSQL container to check the reservation count:
 
-```sql
-SELECT COUNT(*) as total_successful_reservations
-FROM reservations
-WHERE event_id = 1 AND status = 'CONFIRMED';
+```bash
+docker exec burstslot-db-1 psql -U toan -d burstslot -c "SELECT COUNT(*) FROM reservations WHERE event_id = 1;"
 ```
 
-### 4. Thiết kế Lược đồ Cơ sở dữ liệu Tối ưu
+---
 
-#### 4.1. Bảng Dữ liệu Tĩnh: `events`
+### 5. Database Schema Design
+
+```mermaid
+erDiagram
+    events ||--|| slot : "has"
+    events ||--o{ reservations : "has"
+    outbox_events {
+        serial id PK
+        varchar event_type
+        text payload
+        varchar status
+        varchar aggregate_id
+        timestamp created_at
+    }
+    events {
+        bigserial id PK
+        varchar name
+        timestamp start_time
+        timestamp end_time
+        timestamp created_at
+    }
+    slot {
+        bigint event_id PK, FK
+        integer available_quantity
+        bigint version
+    }
+    reservations {
+        bigserial id PK
+        bigint user_id
+        bigint event_id FK
+        integer quantity
+        varchar status
+        varchar idempotency_key UK
+        timestamp created_at
+    }
+```
+
+#### 5.1. `events`
 
 ```sql
 CREATE TABLE events (
@@ -105,7 +167,7 @@ CREATE TABLE events (
 );
 ```
 
-#### 4.2. Bảng Trạng thái Tương tranh: `slot`
+#### 5.2. `slot`
 
 ```sql
 CREATE TABLE slot (
@@ -119,7 +181,7 @@ CREATE TABLE slot (
 CREATE INDEX idx_slot_event_id ON slot(event_id);
 ```
 
-#### 4.3. Sổ cái Giao dịch: `reservations`
+#### 5.3. `reservations`
 
 ```sql
 CREATE TABLE reservations (
@@ -134,4 +196,17 @@ CREATE TABLE reservations (
 
 CREATE INDEX idx_reservations_user_event ON reservations(user_id, event_id);
 CREATE INDEX idx_reservations_idempotency ON reservations(idempotency_key);
+```
+
+#### 5.4. `outbox_events`
+
+```sql
+CREATE TABLE IF NOT EXISTS outbox_events (
+    id SERIAL PRIMARY KEY,
+    event_type VARCHAR(255) NOT NULL,
+    payload TEXT NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    aggregate_id VARCHAR(255),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW()
+);
 ```
