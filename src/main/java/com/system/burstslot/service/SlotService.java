@@ -23,8 +23,7 @@ public class SlotService {
     return slotRepository.findById(eventId)
       .map(slot -> new SlotDto(
         slot.getEventId(), 
-        slot.getAvailableQuantity(),
-        slot.getVersion()
+        slot.getAvailableQuantity()
       ));
   }
 
@@ -40,8 +39,7 @@ public class SlotService {
 
     return new SlotDto(
       updatedSlot.getEventId(),
-      updatedSlot.getAvailableQuantity(),
-      updatedSlot.getVersion()
+      updatedSlot.getAvailableQuantity()
     );
   }
 }

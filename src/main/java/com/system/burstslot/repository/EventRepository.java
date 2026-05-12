@@ -13,8 +13,7 @@ import com.system.burstslot.model.Event;
 public interface EventRepository extends JpaRepository<Event, Long> {
   @Query("SELECT new com.system.burstslot.dto.EventDto(" +
            "e.id, e.name, e.startTime, e.endTime, " +
-           "COALESCE(s.availableQuantity, 0), " +
-           "COALESCE(s.version, 0L)) " +
+           "COALESCE(s.availableQuantity, 0)) " +
            "FROM Event e LEFT JOIN Slot s ON e.id = s.event.id")
   List<EventDto> findAllWithSlots();
 }

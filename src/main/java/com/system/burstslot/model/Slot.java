@@ -8,7 +8,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -28,8 +27,4 @@ public class Slot {
 
     @Column(name = "available_quantity", nullable = false)
     private Integer availableQuantity;
-
-    @Version
-    @Column(name = "version", nullable = false)
-    private Long version;
 }

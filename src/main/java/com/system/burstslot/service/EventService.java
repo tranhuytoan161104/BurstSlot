@@ -42,7 +42,6 @@ public class EventService {
     Slot slot = new Slot();
     slot.setEvent(savedEvent);
     slot.setAvailableQuantity(availableQuantity);
-    slot.setVersion(0L);
 
     slotRepository.save(slot);
 

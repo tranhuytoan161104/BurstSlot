@@ -7,6 +7,5 @@ public record EventDto (
     String name, 
     OffsetDateTime startTime, 
     OffsetDateTime endTime,
-    Integer availableQuantity,
-    Long slotVersion
+    Integer availableQuantity
 ){}
