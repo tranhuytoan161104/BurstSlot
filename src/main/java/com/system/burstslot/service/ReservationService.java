@@ -9,9 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.system.burstslot.repository.SlotRepository;
 import com.system.burstslot.repository.ReservationRepository;
-import com.system.burstslot.dto.BookingRequest;
+import com.system.burstslot.dto.ReservationRequest;
 import com.system.burstslot.model.Reservation;
-import com.system.burstslot.event.BookingSuccessEvent;
+import com.system.burstslot.event.ReservationSuccessEvent;
 import com.system.burstslot.repository.OutboxEventRepository;
 import com.system.burstslot.model.OutboxEvent;
 
@@ -37,7 +37,7 @@ public class ReservationService {
     }
 
     @Transactional
-    public void createBooking(BookingRequest request, String idempotencyKey) {
+    public void createReservation(ReservationRequest request, String idempotencyKey) {
         String redisKey = "event:" + request.eventId() + ":tickets";
 
         Long remainingTickets = redisTemplate.opsForValue().decrement(redisKey, request.quantity());
@@ -66,11 +66,11 @@ public class ReservationService {
             
             Reservation savedRes = reservationRepository.save(res);
 
-            BookingSuccessEvent eventData = new BookingSuccessEvent(savedRes.getId(), savedRes.getUserId(), savedRes.getEventId());
+            ReservationSuccessEvent eventData = new ReservationSuccessEvent(savedRes.getId(), savedRes.getUserId(), savedRes.getEventId());
             String payloadJson = objectMapper.writeValueAsString(eventData);
             
             OutboxEvent outboxEvent = new OutboxEvent();
-            outboxEvent.setEventType("BOOKING_SUCCESS");
+            outboxEvent.setEventType("RESERVATION_SUCCESS");
             outboxEvent.setPayload(payloadJson);
             outboxEvent.setAggregateId(String.valueOf(savedRes.getUserId()));
             outboxEvent.setStatus("PENDING"); 

@@ -18,11 +18,10 @@ public class CacheWarmer implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) throws Exception {
-        Slot slot = slotRepository.findById(1L).orElse(null);
-        if (slot != null) {
-            String redisKey = "event:1:tickets";
+    public void run(String... args) {
+        slotRepository.findAll().forEach(slot -> {
+            String redisKey = "event:" + slot.getEventId() + ":tickets";
             redisTemplate.opsForValue().set(redisKey, String.valueOf(slot.getAvailableQuantity()));
-        }
+        });
     }
 }

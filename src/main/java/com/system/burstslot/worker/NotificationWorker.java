@@ -7,15 +7,12 @@ import org.springframework.stereotype.Component;
 public class NotificationWorker {
 
     @KafkaListener(
-    topics = "booking.success", 
+    topics = "reservation.success", 
     groupId = "burstslot-worker-group"
     )
-    public void handleBookingSuccessEvent(String messageJson) {
+    public void handleReservationSuccessEvent(String messageJson) {
         try {
-            
-            Thread.sleep(3000); 
-            
-            
+            Thread.sleep(3000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

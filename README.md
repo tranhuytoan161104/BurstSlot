@@ -39,7 +39,7 @@ export const options = {
   },
 };
 export default function () {
-  const url = "http://localhost:8080/api/v1/bookings";
+  const url = "http://localhost:8080/api/v1/reservations";
 
   const payload = JSON.stringify({
     eventId: 1,
@@ -86,7 +86,7 @@ k6 run loadtest.js
 **Thực hành (SQL Query trên PostgreSQL):**
 
 ```sql
-SELECT COUNT(*) as total_successful_bookings
+SELECT COUNT(*) as total_successful_reservations
 FROM reservations
 WHERE event_id = 1 AND status = 'CONFIRMED';
 ```

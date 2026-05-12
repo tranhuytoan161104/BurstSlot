@@ -2,25 +2,25 @@ package com.system.burstslot.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.system.burstslot.dto.BookingRequest;
+import com.system.burstslot.dto.ReservationRequest;
 import com.system.burstslot.service.ReservationService;
 
 @RestController
-@RequestMapping("/api/v1/bookings")
+@RequestMapping("/api/v1/reservations")
 public class ReservationController {
 
-    private final ReservationService bookingService;
+    private final ReservationService reservationService;
 
-    public ReservationController(ReservationService bookingService) {
-        this.bookingService = bookingService;
+    public ReservationController(ReservationService reservationService) {
+        this.reservationService = reservationService;
     }
 
     @PostMapping
-    public ResponseEntity<String> bookSlot(
-            @RequestBody BookingRequest request,
+    public ResponseEntity<String> createReservation(
+            @RequestBody ReservationRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         
-        bookingService.createBooking(request, idempotencyKey);
+        reservationService.createReservation(request, idempotencyKey);
         return ResponseEntity.ok("Thành công");
     }
 }

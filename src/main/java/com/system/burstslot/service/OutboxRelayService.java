@@ -27,7 +27,7 @@ public class OutboxRelayService {
 
         for (OutboxEvent event : pendingEvents) {
             try {
-                kafkaTemplate.send("booking.success", event.getAggregateId(), event.getPayload()).get();
+                kafkaTemplate.send("reservation.success", event.getAggregateId(), event.getPayload()).get();
                 
                 event.setStatus("SENT");
                 outboxRepository.save(event);

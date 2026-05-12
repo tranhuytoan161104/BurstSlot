@@ -1,6 +1,6 @@
 package com.system.burstslot.event;
 
-public record BookingSuccessEvent(
+public record ReservationSuccessEvent(
     Long reservationId,
     Long userId,
     Long eventId

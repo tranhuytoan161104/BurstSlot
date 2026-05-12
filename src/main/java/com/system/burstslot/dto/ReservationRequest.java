@@ -1,6 +1,6 @@
 package com.system.burstslot.dto;
 
-public record BookingRequest(
+public record ReservationRequest(
     Long eventId,
     Long userId,
     Integer quantity
