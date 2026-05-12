@@ -37,7 +37,7 @@ public class ReservationService {
     }
 
     @Transactional
-    public void createBooking(BookingRequest request) {
+    public void createBooking(BookingRequest request, String idempotencyKey) {
         String redisKey = "event:" + request.eventId() + ":tickets";
 
         Long remainingTickets = redisTemplate.opsForValue().decrement(redisKey, request.quantity());
@@ -59,6 +59,11 @@ public class ReservationService {
             res.setUserId(request.userId());
             res.setQuantity(request.quantity());
             res.setStatus("SUCCESS");
+            
+            if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+                res.setIdempotencyKey(idempotencyKey);
+            }
+            
             Reservation savedRes = reservationRepository.save(res);
 
             BookingSuccessEvent eventData = new BookingSuccessEvent(savedRes.getId(), savedRes.getUserId(), savedRes.getEventId());

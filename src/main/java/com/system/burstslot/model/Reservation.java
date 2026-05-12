@@ -24,14 +24,12 @@ public class Reservation {
     @Column(name = "idempotency_key")
     private String idempotencyKey;
 
-    // Thiết lập giá trị mặc định ngay khi tạo object
     @PrePersist
     public void prePersist() {
         if (this.status == null) this.status = "PENDING";
         if (this.idempotencyKey == null) this.idempotencyKey = UUID.randomUUID().toString();
     }
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getUserId() { return userId; }

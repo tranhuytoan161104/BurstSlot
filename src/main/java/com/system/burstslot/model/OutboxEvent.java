@@ -26,8 +26,6 @@ public class OutboxEvent {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // --- Getters & Setters ---
-
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

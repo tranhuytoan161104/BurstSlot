@@ -16,8 +16,11 @@ public class ReservationController {
     }
 
     @PostMapping
-    public ResponseEntity<String> bookSlot(@RequestBody BookingRequest request) {
-        bookingService.createBooking(request);
+    public ResponseEntity<String> bookSlot(
+            @RequestBody BookingRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        
+        bookingService.createBooking(request, idempotencyKey);
         return ResponseEntity.ok("Thành công");
     }
 }
