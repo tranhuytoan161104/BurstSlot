@@ -44,14 +44,14 @@ public class ReservationService {
 
         if (remainingTickets == null || remainingTickets < 0) {
             redisTemplate.opsForValue().increment(redisKey, request.quantity());
-            throw new RuntimeException("Rất tiếc, vé đã bán hết!"); 
+            throw new RuntimeException("Tickets sold out."); 
         }
 
         try {
             int updatedRows = slotRepository.decrementSlot(request.eventId(), request.quantity());
 
             if (updatedRows == 0) {
-                throw new RuntimeException("Lệch pha dữ liệu: CSDL không đủ vé để cấp phát.");
+                throw new RuntimeException("Insufficient tickets in database.");
             }
 
             Reservation res = new Reservation();
@@ -74,7 +74,7 @@ public class ReservationService {
 
         } catch (Exception ex) {
             redisTemplate.opsForValue().increment(redisKey, request.quantity());
-            throw new RuntimeException("Giao dịch thất bại, vé đã được hoàn lại. Lỗi: " + ex.getMessage());
+            throw new RuntimeException("Transaction failed. Error: " + ex.getMessage());
         }
     }
 }

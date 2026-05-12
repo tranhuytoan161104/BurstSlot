@@ -24,7 +24,6 @@ public class OutboxRelayService {
 
         if (pendingEvents.isEmpty()) return;
 
-        System.out.println("[OutboxRelay] Bắt đầu gửi " + pendingEvents.size() + " tin nhắn lên Kafka...");
 
         for (OutboxEvent event : pendingEvents) {
             try {
@@ -34,7 +33,6 @@ public class OutboxRelayService {
                 outboxRepository.save(event);
 
             } catch (Exception e) {
-                System.err.println("[OutboxRelay] Lỗi khi gửi tin nhắn ID " + event.getId() + ". Sẽ thử lại sau.");
             }
         }
     }
